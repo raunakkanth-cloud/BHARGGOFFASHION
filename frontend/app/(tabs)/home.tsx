@@ -91,19 +91,50 @@ export default function Home() {
           </View>
         </View>
 
-        {/* Subscription Banner - optional */}
-        {isAuthenticated && !user?.subscription_status && (
-          <TouchableOpacity testID="home-subscribe-btn" style={styles.subscriptionBanner}>
-            <View style={styles.subscriptionContent}>
-              <Ionicons name="diamond" size={28} color={Colors.primary} />
-              <View style={styles.subscriptionText}>
-                <Text style={styles.subscriptionTitle}>Become a Premium Member</Text>
-                <Text style={styles.subscriptionSubtitle}>Get 20% off + Referral earnings for just ₹111 (Optional)</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={24} color={Colors.primary} />
+        {/* Subscription Button - visible for everyone */}
+        <TouchableOpacity
+          testID="home-subscribe-btn"
+          style={styles.subscriptionBanner}
+          onPress={() => {
+            if (!isAuthenticated) {
+              Alert.alert('Register to Subscribe', 'Create an account and pay ₹111 to become a Premium Member with 20% off + referral earnings!', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Register Now', onPress: () => router.push('/auth/register') },
+              ]);
+            } else if (user?.subscription_status) {
+              Alert.alert('Already Premium', 'You are already a Premium Member!');
+            } else {
+              Alert.alert('Subscribe', 'Pay ₹111 to become a Premium Member?\n\nBenefits:\n• 20% discount on all purchases\n• Faster delivery\n• Referral earnings access', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Pay ₹111', onPress: async () => {
+                  try {
+                    await api.post(`/subscription/${user?._id}/subscribe`);
+                    Alert.alert('Subscribed!', 'You are now a Premium Member!');
+                  } catch (e: any) {
+                    Alert.alert('Error', e.response?.data?.detail || 'Failed to subscribe');
+                  }
+                }},
+              ]);
+            }
+          }}
+        >
+          <View style={styles.subscriptionContent}>
+            <Ionicons name="diamond" size={28} color={Colors.primary} />
+            <View style={styles.subscriptionText}>
+              <Text style={styles.subscriptionTitle}>
+                {isAuthenticated && user?.subscription_status ? '✓ Premium Member' : 'Become a Premium Member'}
+              </Text>
+              <Text style={styles.subscriptionSubtitle}>
+                {isAuthenticated && user?.subscription_status
+                  ? 'Enjoy 20% off + referral earnings'
+                  : 'Pay ₹111 → Get 20% off + Referral earnings'}
+              </Text>
             </View>
-          </TouchableOpacity>
-        )}
+            <View style={styles.subscribePrice}>
+              <Text style={styles.subscribePriceText}>₹111</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
 
         {/* Categories */}
         <View style={styles.section}>
@@ -130,7 +161,7 @@ export default function Home() {
           </View>
           <View style={styles.productsGrid}>
             {products.slice(0, 6).map((product: any) => (
-              <TouchableOpacity key={product._id} style={styles.productCard}>
+              <TouchableOpacity key={product._id} style={styles.productCard} onPress={() => router.push(`/product/${product._id}`)}>
                 {product.image_url ? (
                   <Image source={{ uri: product.image_url }} style={styles.productImage} />
                 ) : (
@@ -190,6 +221,8 @@ const styles = StyleSheet.create({
   subscriptionText: { flex: 1, marginLeft: 14 },
   subscriptionTitle: { fontSize: 15, fontWeight: 'bold', color: Colors.text, marginBottom: 2 },
   subscriptionSubtitle: { fontSize: 13, color: Colors.textSecondary },
+  subscribePrice: { backgroundColor: Colors.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
+  subscribePriceText: { fontSize: 16, fontWeight: 'bold', color: Colors.white },
   section: { marginTop: 8 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, marginBottom: 12 },
   sectionTitle: { fontSize: 20, fontWeight: 'bold', color: Colors.text },

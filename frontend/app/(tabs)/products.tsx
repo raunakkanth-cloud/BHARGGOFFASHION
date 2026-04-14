@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { LOGO_URL } from '../../constants/Logo';
 import api from '../../utils/api';
@@ -20,6 +21,7 @@ import api from '../../utils/api';
 const { width } = Dimensions.get('window');
 
 export default function Products() {
+  const router = useRouter();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -64,7 +66,7 @@ export default function Products() {
   }, [search, selectedCategory]);
 
   const renderProduct = ({ item }: any) => (
-    <TouchableOpacity testID={`product-card-${item._id}`} style={styles.productCard}>
+    <TouchableOpacity testID={`product-card-${item._id}`} style={styles.productCard} onPress={() => router.push(`/product/${item._id}`)}>
       {item.image_url ? (
         <Image source={{ uri: item.image_url }} style={styles.productImage} />
       ) : (

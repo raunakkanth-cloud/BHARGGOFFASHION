@@ -27,6 +27,7 @@ export default function Register() {
   const [address, setAddress] = useState('');
   const [pincode, setPincode] = useState('');
   const [referralCode, setReferralCode] = useState('');
+  const [subscribeNow, setSubscribeNow] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
@@ -53,7 +54,7 @@ export default function Register() {
       Alert.alert('Success', response.data.message);
       router.push({
         pathname: '/auth/verify-otp',
-        params: { email: email.toLowerCase().trim(), mode: 'register' },
+        params: { email: email.toLowerCase().trim(), mode: 'register', subscribe: subscribeNow ? 'yes' : 'no' },
       });
     } catch (error: any) {
       const message = error.response?.data?.detail || 'Registration failed. Please try again.';
@@ -110,8 +111,28 @@ export default function Register() {
               <TextInput testID="register-referral-input" style={styles.input} placeholder="Referral Code (Optional)" placeholderTextColor={Colors.gray} value={referralCode} onChangeText={setReferralCode} autoCapitalize="characters" />
             </View>
 
+            {/* Subscription Option */}
+            <TouchableOpacity
+              testID="register-subscribe-toggle"
+              style={[styles.subscribeCard, subscribeNow && styles.subscribeCardActive]}
+              onPress={() => setSubscribeNow(!subscribeNow)}
+            >
+              <View style={styles.subscribeCardRow}>
+                <View style={[styles.checkbox, subscribeNow && styles.checkboxActive]}>
+                  {subscribeNow && <Ionicons name="checkmark" size={16} color={Colors.white} />}
+                </View>
+                <Ionicons name="diamond" size={24} color={Colors.primary} style={{ marginLeft: 12 }} />
+                <View style={styles.subscribeCardText}>
+                  <Text style={styles.subscribeCardTitle}>Premium Membership - ₹111</Text>
+                  <Text style={styles.subscribeCardSubtitle}>20% off + Faster delivery + Referral earnings</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+
             <TouchableOpacity testID="register-submit-btn" style={[styles.button, loading && styles.buttonDisabled]} onPress={handleRegister} disabled={loading}>
-              {loading ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.buttonText}>Continue</Text>}
+              {loading ? <ActivityIndicator color={Colors.white} /> : (
+                <Text style={styles.buttonText}>{subscribeNow ? 'Continue & Pay ₹111' : 'Continue'}</Text>
+              )}
             </TouchableOpacity>
 
             <View style={styles.footer}>
@@ -148,4 +169,12 @@ const styles = StyleSheet.create({
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
   footerText: { color: Colors.textSecondary, fontSize: 16 },
   linkText: { color: Colors.primary, fontSize: 16, fontWeight: '600' },
+  subscribeCard: { borderWidth: 1.5, borderColor: Colors.border, borderRadius: 12, padding: 16, marginBottom: 14, backgroundColor: Colors.lightGray },
+  subscribeCardActive: { borderColor: Colors.primary, backgroundColor: Colors.primary + '08' },
+  subscribeCardRow: { flexDirection: 'row', alignItems: 'center' },
+  checkbox: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: Colors.border, justifyContent: 'center', alignItems: 'center' },
+  checkboxActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  subscribeCardText: { flex: 1, marginLeft: 12 },
+  subscribeCardTitle: { fontSize: 15, fontWeight: 'bold', color: Colors.text },
+  subscribeCardSubtitle: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
 });

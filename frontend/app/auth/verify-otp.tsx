@@ -22,7 +22,7 @@ import { useAuthStore } from '../../store/authStore';
 export default function VerifyOTP() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { email, mode } = params;
+  const { email, mode, subscribe } = params;
   const { setUser, setToken } = useAuthStore();
   
   const [otp, setOtp] = useState('');
@@ -57,16 +57,34 @@ export default function VerifyOTP() {
       await AsyncStorage.setItem('user_data', JSON.stringify(user));
       setUser(user);
 
-      Alert.alert(
-        'Success',
-        mode === 'register' ? 'Registration successful!' : 'Login successful!',
-        [
-          {
-            text: 'OK',
-            onPress: () => router.replace('/(tabs)/home'),
-          },
-        ]
-      );
+      // Auto-subscribe if selected during registration
+      const userId = user._id || user.id;
+      if (mode === 'register' && subscribe === 'yes' && userId) {
+        try {
+          await api.post(`/subscription/${userId}/subscribe`);
+          // Update user data with subscription
+          const updatedUser = { ...user, subscription_status: true };
+          await AsyncStorage.setItem('user_data', JSON.stringify(updatedUser));
+          setUser(updatedUser);
+          Alert.alert(
+            'Welcome to Bharggo Fashion!',
+            'Registration successful! You are now a Premium Member with 20% off on all purchases.',
+            [{ text: 'Start Shopping', onPress: () => router.replace('/(tabs)/home') }]
+          );
+        } catch (subErr) {
+          Alert.alert(
+            'Registration Successful',
+            'Account created! Subscription payment will be processed later.',
+            [{ text: 'OK', onPress: () => router.replace('/(tabs)/home') }]
+          );
+        }
+      } else {
+        Alert.alert(
+          'Success',
+          mode === 'register' ? 'Registration successful!' : 'Login successful!',
+          [{ text: 'OK', onPress: () => router.replace('/(tabs)/home') }]
+        );
+      }
     } catch (error: any) {
       const message = error.response?.data?.detail || 'Invalid OTP. Please try again.';
       Alert.alert('Error', message);
