@@ -9,10 +9,12 @@ import {
   ActivityIndicator,
   Dimensions,
   Image,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
+import { LOGO_URL } from '../../constants/Logo';
 import api from '../../utils/api';
 
 const { width } = Dimensions.get('window');
@@ -97,6 +99,7 @@ export default function Products() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
+        <Image source={{ uri: LOGO_URL }} style={styles.headerLogo} />
         <Text style={styles.title}>Products</Text>
       </View>
 
@@ -175,7 +178,8 @@ function ScrollableCategories({ categories, selectedCategory, onSelect }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.white },
-  header: { paddingHorizontal: 20, paddingVertical: 16 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
+  headerLogo: { width: 44, height: 44, resizeMode: 'contain', marginRight: 12 },
   title: { fontSize: 28, fontWeight: 'bold', color: Colors.text },
   searchContainer: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginBottom: 16, paddingHorizontal: 16, height: 48, backgroundColor: Colors.lightGray, borderRadius: 12 },
   searchIcon: { marginRight: 12 },

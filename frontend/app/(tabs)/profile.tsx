@@ -7,43 +7,49 @@ import {
   TouchableOpacity,
   Alert,
   Share,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
+import { LOGO_URL } from '../../constants/Logo';
 import { useAuthStore } from '../../store/authStore';
 
 export default function Profile() {
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user, isAuthenticated, logout } = useAuthStore();
+
+  // Guest mode - show login prompt
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.guestContainer}>
+          <Image source={{ uri: LOGO_URL }} style={styles.guestLogo} />
+          <Text style={styles.guestTitle}>Join Bharggo Fashion</Text>
+          <Text style={styles.guestSubtitle}>Login or register to access your profile, wallet, referral code, and exclusive benefits</Text>
+          <TouchableOpacity testID="profile-guest-login-btn" style={styles.guestLoginBtn} onPress={() => router.push('/auth/login')}>
+            <Text style={styles.guestLoginBtnText}>Login</Text>
+          </TouchableOpacity>
+          <TouchableOpacity testID="profile-guest-register-btn" style={styles.guestRegisterBtn} onPress={() => router.push('/auth/register')}>
+            <Text style={styles.guestRegisterBtnText}>Create Account</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const handleShareReferral = async () => {
     try {
-      await Share.share({
-        message: `Join Bharggo Fashion using my referral code: ${user?.referral_id}\n\nGet exclusive benefits and start earning!`,
-      });
-    } catch (error) {
-      console.error('Error sharing:', error);
-    }
+      await Share.share({ message: `Join Bharggo Fashion using my referral code: ${user?.referral_id}\n\nGet exclusive benefits and start earning!` });
+    } catch (error) { console.error('Error sharing:', error); }
   };
 
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            await logout();
-            router.replace('/auth/login');
-          },
-        },
-      ]
-    );
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Logout', style: 'destructive', onPress: async () => { await logout(); router.replace('/(tabs)/home'); } },
+    ]);
   };
 
   return (
@@ -51,16 +57,15 @@ export default function Profile() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
+          <Image source={{ uri: LOGO_URL }} style={styles.headerLogo} />
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {user?.name?.charAt(0).toUpperCase()}
-            </Text>
+            <Text style={styles.avatarText}>{user?.name?.charAt(0).toUpperCase()}</Text>
           </View>
           <Text style={styles.name}>{user?.name}</Text>
           <Text style={styles.email}>{user?.email}</Text>
         </View>
 
-        {/* Subscription Status */}
+        {/* Subscription Status - optional */}
         {user?.subscription_status ? (
           <View style={styles.premiumBanner}>
             <Ionicons name="diamond" size={24} color={Colors.primary} />
@@ -75,8 +80,8 @@ export default function Profile() {
             <View style={styles.subscribeContent}>
               <Ionicons name="diamond-outline" size={24} color={Colors.primary} />
               <View style={styles.subscribeText}>
-                <Text style={styles.subscribeTitle}>Become Premium</Text>
-                <Text style={styles.subscribeSubtitle}>Just ₹111 - Get 20% off + referral earnings</Text>
+                <Text style={styles.subscribeTitle}>Become Premium (Optional)</Text>
+                <Text style={styles.subscribeSubtitle}>₹111 - Get 20% off + referral earnings</Text>
               </View>
               <Ionicons name="chevron-forward" size={24} color={Colors.primary} />
             </View>
@@ -121,42 +126,25 @@ export default function Profile() {
               <Text style={styles.shareButtonText}>Share</Text>
             </TouchableOpacity>
           </View>
-          <Text style={styles.referralDescription}>
-            Share your code and earn 1% commission on purchases up to 9 levels!
-          </Text>
+          <Text style={styles.referralDescription}>Share your code and earn 1% commission on purchases up to 9 levels!</Text>
         </View>
 
         {/* Menu Options */}
         <View style={styles.menuSection}>
           <TouchableOpacity testID="profile-orders-btn" style={styles.menuItem} onPress={() => router.push('/orders')}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="receipt-outline" size={24} color={Colors.text} />
-              <Text style={styles.menuItemText}>My Orders</Text>
-            </View>
+            <View style={styles.menuItemLeft}><Ionicons name="receipt-outline" size={24} color={Colors.text} /><Text style={styles.menuItemText}>My Orders</Text></View>
             <Ionicons name="chevron-forward" size={20} color={Colors.gray} />
           </TouchableOpacity>
-
           <TouchableOpacity testID="profile-wishlist-btn" style={styles.menuItem}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="heart-outline" size={24} color={Colors.text} />
-              <Text style={styles.menuItemText}>Wishlist</Text>
-            </View>
+            <View style={styles.menuItemLeft}><Ionicons name="heart-outline" size={24} color={Colors.text} /><Text style={styles.menuItemText}>Wishlist</Text></View>
             <Ionicons name="chevron-forward" size={20} color={Colors.gray} />
           </TouchableOpacity>
-
           <TouchableOpacity testID="profile-referrals-btn" style={styles.menuItem}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="people-outline" size={24} color={Colors.text} />
-              <Text style={styles.menuItemText}>My Referrals</Text>
-            </View>
+            <View style={styles.menuItemLeft}><Ionicons name="people-outline" size={24} color={Colors.text} /><Text style={styles.menuItemText}>My Referrals</Text></View>
             <Ionicons name="chevron-forward" size={20} color={Colors.gray} />
           </TouchableOpacity>
-
           <TouchableOpacity testID="profile-card-btn" style={styles.menuItem} onPress={() => router.push('/shopping-card')}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="card-outline" size={24} color={Colors.text} />
-              <Text style={styles.menuItemText}>Digital Shopping Card</Text>
-            </View>
+            <View style={styles.menuItemLeft}><Ionicons name="card-outline" size={24} color={Colors.text} /><Text style={styles.menuItemText}>Digital Shopping Card</Text></View>
             <Ionicons name="chevron-forward" size={20} color={Colors.gray} />
           </TouchableOpacity>
         </View>
@@ -164,35 +152,20 @@ export default function Profile() {
         {/* Legal Pages */}
         <View style={styles.menuSection}>
           <Text style={styles.menuSectionTitle}>Legal</Text>
-          <TouchableOpacity testID="profile-terms-btn" style={styles.menuItem} onPress={() => router.push({ pathname: '/legal', params: { type: 'terms' } })}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="document-text-outline" size={24} color={Colors.text} />
-              <Text style={styles.menuItemText}>Terms & Conditions</Text>
-            </View>
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push({ pathname: '/legal', params: { type: 'terms' } })}>
+            <View style={styles.menuItemLeft}><Ionicons name="document-text-outline" size={24} color={Colors.text} /><Text style={styles.menuItemText}>Terms & Conditions</Text></View>
             <Ionicons name="chevron-forward" size={20} color={Colors.gray} />
           </TouchableOpacity>
-
-          <TouchableOpacity testID="profile-privacy-btn" style={styles.menuItem} onPress={() => router.push({ pathname: '/legal', params: { type: 'privacy' } })}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="shield-checkmark-outline" size={24} color={Colors.text} />
-              <Text style={styles.menuItemText}>Privacy Policy</Text>
-            </View>
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push({ pathname: '/legal', params: { type: 'privacy' } })}>
+            <View style={styles.menuItemLeft}><Ionicons name="shield-checkmark-outline" size={24} color={Colors.text} /><Text style={styles.menuItemText}>Privacy Policy</Text></View>
             <Ionicons name="chevron-forward" size={20} color={Colors.gray} />
           </TouchableOpacity>
-
-          <TouchableOpacity testID="profile-refund-btn" style={styles.menuItem} onPress={() => router.push({ pathname: '/legal', params: { type: 'refund' } })}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="refresh-outline" size={24} color={Colors.text} />
-              <Text style={styles.menuItemText}>Refund & Return Policy</Text>
-            </View>
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push({ pathname: '/legal', params: { type: 'refund' } })}>
+            <View style={styles.menuItemLeft}><Ionicons name="refresh-outline" size={24} color={Colors.text} /><Text style={styles.menuItemText}>Refund & Return Policy</Text></View>
             <Ionicons name="chevron-forward" size={20} color={Colors.gray} />
           </TouchableOpacity>
-
-          <TouchableOpacity testID="profile-shipping-btn" style={styles.menuItem} onPress={() => router.push({ pathname: '/legal', params: { type: 'shipping' } })}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="car-outline" size={24} color={Colors.text} />
-              <Text style={styles.menuItemText}>Shipping Policy</Text>
-            </View>
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push({ pathname: '/legal', params: { type: 'shipping' } })}>
+            <View style={styles.menuItemLeft}><Ionicons name="car-outline" size={24} color={Colors.text} /><Text style={styles.menuItemText}>Shipping Policy</Text></View>
             <Ionicons name="chevron-forward" size={20} color={Colors.gray} />
           </TouchableOpacity>
         </View>
@@ -200,13 +173,9 @@ export default function Profile() {
         {/* Logout */}
         <View style={styles.menuSection}>
           <TouchableOpacity testID="profile-logout-btn" style={[styles.menuItem, styles.logoutItem]} onPress={handleLogout}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="log-out-outline" size={24} color={Colors.error} />
-              <Text style={[styles.menuItemText, styles.logoutText]}>Logout</Text>
-            </View>
+            <View style={styles.menuItemLeft}><Ionicons name="log-out-outline" size={24} color={Colors.error} /><Text style={[styles.menuItemText, styles.logoutText]}>Logout</Text></View>
           </TouchableOpacity>
         </View>
-
         <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
@@ -215,19 +184,28 @@ export default function Profile() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.lightGray },
-  header: { backgroundColor: Colors.white, alignItems: 'center', paddingVertical: 32, paddingHorizontal: 20 },
-  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  avatarText: { fontSize: 32, fontWeight: 'bold', color: Colors.white },
-  name: { fontSize: 24, fontWeight: 'bold', color: Colors.text, marginBottom: 4 },
+  guestContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40, backgroundColor: Colors.white },
+  guestLogo: { width: 160, height: 160, resizeMode: 'contain', marginBottom: 24 },
+  guestTitle: { fontSize: 24, fontWeight: 'bold', color: Colors.text, marginBottom: 12 },
+  guestSubtitle: { fontSize: 15, color: Colors.textSecondary, textAlign: 'center', marginBottom: 32, lineHeight: 22 },
+  guestLoginBtn: { backgroundColor: Colors.primary, width: '100%', height: 52, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
+  guestLoginBtnText: { color: Colors.white, fontSize: 18, fontWeight: '600' },
+  guestRegisterBtn: { borderWidth: 2, borderColor: Colors.primary, width: '100%', height: 52, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  guestRegisterBtnText: { color: Colors.primary, fontSize: 18, fontWeight: '600' },
+  header: { backgroundColor: Colors.white, alignItems: 'center', paddingVertical: 24, paddingHorizontal: 20 },
+  headerLogo: { width: 60, height: 60, resizeMode: 'contain', marginBottom: 12 },
+  avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
+  avatarText: { fontSize: 28, fontWeight: 'bold', color: Colors.white },
+  name: { fontSize: 22, fontWeight: 'bold', color: Colors.text, marginBottom: 4 },
   email: { fontSize: 14, color: Colors.textSecondary },
   premiumBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.white, margin: 16, padding: 16, borderRadius: 12, borderWidth: 2, borderColor: Colors.primary },
   premiumText: { flex: 1, marginLeft: 12 },
   premiumTitle: { fontSize: 16, fontWeight: 'bold', color: Colors.text },
   premiumSubtitle: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
-  subscribeBanner: { backgroundColor: Colors.white, margin: 16, borderRadius: 12, borderWidth: 2, borderColor: Colors.primary },
+  subscribeBanner: { backgroundColor: Colors.white, margin: 16, borderRadius: 12, borderWidth: 1.5, borderColor: Colors.primary },
   subscribeContent: { flexDirection: 'row', alignItems: 'center', padding: 16 },
   subscribeText: { flex: 1, marginLeft: 12 },
-  subscribeTitle: { fontSize: 16, fontWeight: 'bold', color: Colors.text },
+  subscribeTitle: { fontSize: 15, fontWeight: 'bold', color: Colors.text },
   subscribeSubtitle: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
   walletCard: { backgroundColor: Colors.white, margin: 16, marginTop: 0, padding: 20, borderRadius: 12 },
   walletHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -245,7 +223,7 @@ const styles = StyleSheet.create({
   referralHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   referralTitle: { fontSize: 16, fontWeight: 'bold', color: Colors.text, marginLeft: 12 },
   referralCodeContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  referralCode: { fontSize: 24, fontWeight: 'bold', color: Colors.primary, letterSpacing: 2 },
+  referralCode: { fontSize: 22, fontWeight: 'bold', color: Colors.primary, letterSpacing: 2 },
   shareButton: { flexDirection: 'row', backgroundColor: Colors.primary, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, alignItems: 'center' },
   shareButtonText: { color: Colors.white, fontSize: 14, fontWeight: '600', marginLeft: 6 },
   referralDescription: { fontSize: 13, color: Colors.textSecondary, lineHeight: 18 },
