@@ -8,7 +8,12 @@ Full-stack eCommerce + MLM (Multi-Level Marketing) mobile application built with
 - **Theme Colors**: Saffron (#FF9933), Green (#138808)
 - **Design**: Premium, Minimal, Fast-loading
 
-## Tech Stack
+## App Flow
+- **Splash** → Home (guest browsing allowed)
+- **Guest users** can browse products, categories, search/filter
+- **Registration required** only when placing an order (cart checkout)
+- **Subscription (₹111) is OPTIONAL** - not required for purchases
+- **Logo** displayed on every screen (splash, home, products, cart, profile, login, register)
 - **Frontend**: Expo (React Native), Expo Router, Zustand, Axios
 - **Backend**: FastAPI, Motor (async MongoDB), JWT
 - **Database**: MongoDB
