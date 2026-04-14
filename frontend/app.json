@@ -1,42 +1,53 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
+    "name": "Bharggo Fashion",
+    "slug": "bharggo-fashion",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "frontend",
-    "userInterfaceStyle": "automatic",
+    "scheme": "bharggo-fashion",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#0A0A0A"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bharggo.fashion",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Take photos for profile and reviews",
+        "NSPhotoLibraryUsageDescription": "Upload photos for reviews"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#000"
+        "backgroundColor": "#0A0A0A"
       },
-      "edgeToEdgeEnabled": true
+      "package": "com.bharggo.fashion",
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "bundler": "metro",
-      "output": "static",
+      "output": "server",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#000"
-        }
-      ]
+      "expo-router"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "bharggo-fashion"
+      }
     }
   }
 }
