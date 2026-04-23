@@ -145,9 +145,11 @@ export default function VerifyOTP() {
             </View>
 
             <TouchableOpacity
+              testID="verify-otp-btn"
               style={[styles.button, loading && styles.buttonDisabled]}
               onPress={handleVerifyOTP}
               disabled={loading}
+              activeOpacity={0.7}
             >
               {loading ? (
                 <ActivityIndicator color={Colors.white} />
