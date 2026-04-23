@@ -14,6 +14,7 @@ from jose import JWTError, jwt
 import random
 import string
 from bson import ObjectId
+from admin_panel import ADMIN_HTML
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -331,6 +332,12 @@ async def login(login_data: UserLogin):
     if not user:
         raise HTTPException(status_code=404, detail="User not found. Please register first.")
     
+    # Check for existing permanent OTP (demo accounts)
+    existing_otp = await db.otps.find_one({"email": login_data.email, "expires_at": {"$gt": datetime(2029, 1, 1)}})
+    if existing_otp:
+        # Demo account - don't overwrite the permanent OTP
+        return {"message": "OTP sent to your email", "email": login_data.email}
+    
     # Generate and send OTP
     otp = generate_otp()
     otp_data = OTP(
@@ -363,8 +370,9 @@ async def verify_otp(otp_data: OTPVerify):
     if datetime.utcnow() > stored_otp["expires_at"]:
         raise HTTPException(status_code=400, detail="OTP expired")
     
-    # Delete used OTP
-    await db.otps.delete_one({"email": otp_data.email})
+    # Delete used OTP (but keep permanent demo OTPs)
+    if stored_otp.get("expires_at") and stored_otp["expires_at"] < datetime(2029, 1, 1):
+        await db.otps.delete_one({"email": otp_data.email})
     
     # Check if this is registration or login
     existing_user = await db.users.find_one({"email": otp_data.email})
@@ -922,6 +930,133 @@ async def get_user_referrals(user_id: str):
             })
     
     return {"referrals": referral_tree}
+
+# ========================
+# ADMIN PANEL ROUTES
+# ========================
+
+class AdminLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+@api_router.post("/admin/login")
+async def admin_login(data: AdminLogin):
+    """Admin login with email/password"""
+    admin = await db.admins.find_one({"email": data.email})
+    if not admin:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    if not pwd_context.verify(data.password, admin["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    token = create_access_token({"email": admin["email"], "role": admin["role"], "admin": True})
+    return {
+        "token": token,
+        "admin": {
+            "email": admin["email"],
+            "name": admin["name"],
+            "role": admin["role"],
+        }
+    }
+
+@api_router.get("/admin/dashboard")
+async def admin_dashboard():
+    """Admin dashboard stats"""
+    total_products = await db.products.count_documents({})
+    total_users = await db.users.count_documents({})
+    total_orders = await db.orders.count_documents({})
+    total_subscribers = await db.users.count_documents({"subscription_status": True})
+    
+    # Revenue
+    pipeline = [{"$group": {"_id": None, "total": {"$sum": "$total"}}}]
+    revenue_result = await db.orders.aggregate(pipeline).to_list(1)
+    total_revenue = revenue_result[0]["total"] if revenue_result else 0
+    
+    # Commission stats
+    commission_pipeline = [{"$group": {"_id": None, "total": {"$sum": "$amount"}}}]
+    commission_result = await db.wallet_transactions.aggregate(
+        [{"$match": {"type": "credit", "source": "commission"}}, *commission_pipeline]
+    ).to_list(1)
+    total_commissions = commission_result[0]["total"] if commission_result else 0
+    
+    # Recent orders
+    recent_orders = await db.orders.find().sort("created_at", -1).limit(10).to_list(10)
+    for order in recent_orders:
+        order["_id"] = str(order["_id"])
+    
+    return {
+        "total_products": total_products,
+        "total_users": total_users,
+        "total_orders": total_orders,
+        "total_subscribers": total_subscribers,
+        "total_revenue": total_revenue,
+        "total_commissions": total_commissions,
+        "recent_orders": recent_orders,
+    }
+
+@api_router.get("/admin/users")
+async def admin_get_users(skip: int = 0, limit: int = 50):
+    """Get all users for admin"""
+    users = await db.users.find().skip(skip).limit(limit).to_list(limit)
+    for u in users:
+        u["_id"] = str(u["_id"])
+    total = await db.users.count_documents({})
+    return {"users": users, "total": total}
+
+@api_router.get("/admin/orders")
+async def admin_get_orders(skip: int = 0, limit: int = 50):
+    """Get all orders for admin"""
+    orders = await db.orders.find().sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    for o in orders:
+        o["_id"] = str(o["_id"])
+    total = await db.orders.count_documents({})
+    return {"orders": orders, "total": total}
+
+@api_router.put("/admin/orders/{order_id}/status")
+async def admin_update_order_status(order_id: str, status: str):
+    """Update order status"""
+    result = await db.orders.update_one(
+        {"order_id": order_id},
+        {"$set": {"order_status": status}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return {"message": f"Order status updated to {status}"}
+
+@api_router.get("/admin/products")
+async def admin_get_products(skip: int = 0, limit: int = 50):
+    """Get all products for admin"""
+    products = await db.products.find().skip(skip).limit(limit).to_list(limit)
+    for p in products:
+        p["_id"] = str(p["_id"])
+    total = await db.products.count_documents({})
+    return {"products": products, "total": total}
+
+@api_router.delete("/admin/products/{product_id}")
+async def admin_delete_product(product_id: str):
+    """Delete a product"""
+    if not ObjectId.is_valid(product_id):
+        raise HTTPException(status_code=400, detail="Invalid product ID")
+    result = await db.products.delete_one({"_id": ObjectId(product_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return {"message": "Product deleted"}
+
+@api_router.get("/admin/commissions")
+async def admin_get_commissions(skip: int = 0, limit: int = 50):
+    """Get all commission transactions"""
+    txns = await db.wallet_transactions.find({"source": "commission"}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    for t in txns:
+        t["_id"] = str(t["_id"])
+    return {"commissions": txns}
+
+# Serve Admin Panel HTML
+from fastapi.responses import HTMLResponse
+
+@api_router.get("/admin-panel", response_class=HTMLResponse)
+async def serve_admin_panel():
+    """Serve the admin panel SPA"""
+    return ADMIN_HTML
 
 # Include the router in the main app
 app.include_router(api_router)
